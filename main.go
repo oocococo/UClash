@@ -15,6 +15,7 @@ import (
 type Conf struct {
 	Providers []string `json:"providers"`
 	Filter    []string `json:"filter"`
+	FilterOut []string `json:"filterout"`
 }
 
 // Server type
@@ -149,7 +150,9 @@ func main() {
 	providers := conf.Providers
 	fmt.Println(fmt.Sprintf("成功读取到%d个托管配置，开始下载...", len(providers)))
 	filters := conf.Filter
-	fmt.Println(fmt.Sprintf("关键字过滤：%s", strings.Join(filters, " | ")))
+	filterouts := conf.FilterOut
+	fmt.Println(fmt.Sprintf("接受关键字：%s", strings.Join(filters, " | ")))
+	fmt.Println(fmt.Sprintf("不接受关键字： %s", strings.Join(filterouts, " | ")))
 	var result Result
 	var remotes []string
 	var wg sync.WaitGroup
@@ -188,9 +191,14 @@ func main() {
 		for i := 0; i < len(urls); i++ {
 			res := Surge2SS(urls[i])
 			if res.Remarks != "" {
-				if len(filters) <= 0 || filters == nil {
+				if (len(filters) <= 0 || filters == nil) && (len(filterouts) <= 0 || filterouts == nil) {
 					servers = append(servers, res)
 					continue
+				}
+				for out := 0; out < len(filterouts); out++ {
+					if on, _ := regexp.MatchString(filterouts[out], res.Remarks); on {
+						goto FILTEROUTIT
+					}
 				}
 				for j := 0; j < len(filters); j++ {
 					if m, _ := regexp.MatchString(filters[j], res.Remarks); m {
@@ -198,6 +206,7 @@ func main() {
 						break
 					}
 				}
+			FILTEROUTIT:
 			}
 		}
 	}
