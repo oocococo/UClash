@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	"gopkg.in/yaml.v2"
 )
 
 // Conf file named update.json
@@ -30,6 +32,18 @@ type Server struct {
 	ServerPort int    `json:"server_port"`
 	Timeout    int    `json:"timeout"`
 }
+
+// YAML type
+/*type Clash struct{
+	Port int `yaml:"port"`
+	Socks_prot int `yaml:"socks-port"`
+	Redir_port int `yaml:"redir-port"`
+	Allow_lan bool `yaml:"allow-lan"`
+	LogLevel string `yaml:"log-level"`
+	Exctr string `yaml:"external-controller"`
+	Secret string `yaml:"secret"`
+	Proxy
+}*/
 
 // SSGui GUI json
 type SSGui struct {
@@ -75,6 +89,100 @@ type SSGui struct {
 	UseOnlinePac   bool        `json:"useOnlinePac"`
 }
 
+// Result of convertion
+type Result struct {
+	Success []string
+	Fromat  []string
+	Network []string
+}
+
+//Main Function
+func main() {
+	conf := ReadConf()
+	gui := ReadSSGui()
+	providers := conf.Providers
+	fmt.Println(fmt.Sprintf("成功读取到%d个托管配置，开始下载...", len(providers)))
+	filters := conf.Filter
+	filterouts := conf.FilterOut
+	fmt.Println(fmt.Sprintf("接受关键字：%s", strings.Join(filters, " | ")))
+	fmt.Println(fmt.Sprintf("不接受关键字： %s", strings.Join(filterouts, " | ")))
+	var result Result
+	var remotes []string //每个切片表示一个surge配置文档内容
+	var wg sync.WaitGroup
+	wg.Add(len(providers)) //多线程
+	for i := 0; i < len(providers); i++ {
+		go func(url string) { //读取从providers下载配置
+			defer wg.Done()
+			client := &http.Client{}
+			request, err := http.NewRequest("GET", url, nil)
+			request.Header.Add("User-Agent", "Surge/1166 CFNetwork/955.1.2 Darwin/18.0.0")
+			if err != nil {
+				fmt.Println(err)
+			}
+			resp, err := client.Do(request)
+			if err != nil {
+				fmt.Println("获取托管失败", err)
+				result.Network = append(result.Network, url)
+			}
+			defer resp.Body.Close()
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				fmt.Println(err)
+			}
+			remotes = append(remotes, string(body))
+		}(providers[i])
+	}
+	wg.Wait() //等待下载完成
+	var servers []Server
+	for k := 0; k < len(remotes); k++ {
+		urls := SurgeFromConf(remotes[k])
+		for i := 0; i < len(urls); i++ {
+			fmt.Println(urls[i])
+		}
+		//未从配置读取到节点信息,将该网址加入格式错误列表
+		if urls == nil {
+			result.Fromat = append(result.Fromat, providers[k])
+			continue
+		}
+		//成功从配置读取节点信息,将该网址加入成功获取列表
+		result.Success = append(result.Success, providers[k])
+		//将全部节点信息转换为Server格式结构体
+		for i := 0; i < len(urls); i++ {
+			res := Surge2SS(urls[i]) //将节点信息解析
+			if res.Remarks != "" {
+				yaml.Encoder
+				//若无过滤,直接加入全部信息
+				/*if (len(filters) <= 0 || filters == nil) && (len(filterouts) <= 0 || filterouts == nil) {
+					servers = append(servers, res)
+					continue
+				}*/
+				for out := 0; out < len(filterouts); out++ {
+					if on, _ := regexp.MatchString(filterouts[out], res.Remarks); on {
+						goto FILTEROUTIT
+					}
+				}
+				for j := 0; j < len(filters); j++ {
+					if m, _ := regexp.MatchString(filters[j], res.Remarks); m {
+						servers = append(servers, res)
+						break
+					}
+				}
+			FILTEROUTIT:
+			}
+		}
+	}
+	fmt.Println(fmt.Sprintf("\n----------------\n成功获取：\n - %s\n格式错误：\n - %s\n网络错误：\n - %s\n----------------\n", strings.Join(result.Success, "\n - "), strings.Join(result.Fromat, "\n - "), strings.Join(result.Network, "\n - ")))
+	gui.Configs = servers
+	outputJSON, _ := json.Marshal(gui)
+	writeFileErr := ioutil.WriteFile("gui-config.json", outputJSON, 0644)
+	if writeFileErr == nil {
+		fmt.Println(fmt.Sprintf("服务器更新完毕，合计更新%d个节点", len(servers)))
+		fmt.Println("请重启Shadowsocks客户端或进入节点列表点击确定")
+	} else {
+		fmt.Println("配置文件写入失败")
+	}
+}
+
 // ReadConf read update.json
 func ReadConf() Conf {
 	cb, err := ioutil.ReadFile("update.json")
@@ -112,7 +220,7 @@ func SurgeFromConf(conf string) []string {
 
 // Surge2SS convert surge style url to ss-gui format
 func Surge2SS(surge string) Server {
-	regex, _ := regexp.Compile("(.*?)\\s*=\\s*custom,(.*?),(.*?),(.*?),(.*?),")
+	regex, _ := regexp.Compile("(.*?)\\s*=\\s*custom,(.*?),(.*?),(.*?),(.*?),") //找到所有节点信息,滤出DIRECT和格式不规范的信息
 	obfsRegex, _ := regexp.Compile("obfs-host\\s*=\\s*(.*?)(?:,|$)")
 	obfsTypeRegex, _ := regexp.Compile("obfs\\s*=\\s*(.*?)(?:,|$)")
 	var res Server
@@ -135,89 +243,4 @@ func Surge2SS(surge string) Server {
 		}
 	}
 	return res
-}
-
-// Result of convertion
-type Result struct {
-	Success []string
-	Fromat  []string
-	Network []string
-}
-
-func main() {
-	conf := ReadConf()
-	gui := ReadSSGui()
-	providers := conf.Providers
-	fmt.Println(fmt.Sprintf("成功读取到%d个托管配置，开始下载...", len(providers)))
-	filters := conf.Filter
-	filterouts := conf.FilterOut
-	fmt.Println(fmt.Sprintf("接受关键字：%s", strings.Join(filters, " | ")))
-	fmt.Println(fmt.Sprintf("不接受关键字： %s", strings.Join(filterouts, " | ")))
-	var result Result
-	var remotes []string
-	var wg sync.WaitGroup
-	wg.Add(len(providers))
-	for i := 0; i < len(providers); i++ {
-		go func(url string) {
-			defer wg.Done()
-			client := &http.Client{}
-			request, err := http.NewRequest("GET", url, nil)
-			request.Header.Add("User-Agent", "Surge/1166 CFNetwork/955.1.2 Darwin/18.0.0")
-			if err != nil {
-				fmt.Println(err)
-			}
-			resp, err := client.Do(request)
-			if err != nil {
-				fmt.Println("获取托管失败", err)
-				result.Network = append(result.Network, url)
-			}
-			defer resp.Body.Close()
-			body, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				fmt.Println(err)
-			}
-			remotes = append(remotes, string(body))
-		}(providers[i])
-	}
-	wg.Wait()
-	var servers []Server
-	for k := 0; k < len(remotes); k++ {
-		urls := SurgeFromConf(remotes[k])
-		if urls == nil {
-			result.Fromat = append(result.Fromat, providers[k])
-			continue
-		}
-		result.Success = append(result.Success, providers[k])
-		for i := 0; i < len(urls); i++ {
-			res := Surge2SS(urls[i])
-			if res.Remarks != "" {
-				if (len(filters) <= 0 || filters == nil) && (len(filterouts) <= 0 || filterouts == nil) {
-					servers = append(servers, res)
-					continue
-				}
-				for out := 0; out < len(filterouts); out++ {
-					if on, _ := regexp.MatchString(filterouts[out], res.Remarks); on {
-						goto FILTEROUTIT
-					}
-				}
-				for j := 0; j < len(filters); j++ {
-					if m, _ := regexp.MatchString(filters[j], res.Remarks); m {
-						servers = append(servers, res)
-						break
-					}
-				}
-			FILTEROUTIT:
-			}
-		}
-	}
-	fmt.Println(fmt.Sprintf("\n----------------\n成功获取：\n - %s\n格式错误：\n - %s\n网络错误：\n - %s\n----------------\n", strings.Join(result.Success, "\n - "), strings.Join(result.Fromat, "\n - "), strings.Join(result.Network, "\n - ")))
-	gui.Configs = servers
-	outputJSON, _ := json.Marshal(gui)
-	writeFileErr := ioutil.WriteFile("gui-config.json", outputJSON, 0644)
-	if writeFileErr == nil {
-		fmt.Println(fmt.Sprintf("服务器更新完毕，合计更新%d个节点", len(servers)))
-		fmt.Println("请重启Shadowsocks客户端或进入节点列表点击确定")
-	} else {
-		fmt.Println("配置文件写入失败")
-	}
 }
