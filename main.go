@@ -10,7 +10,7 @@ import (
 	"strings"
 	"sync"
 
-	"gopkg.in/yaml.v2"
+	_ "gopkg.in/yaml.v2"
 )
 
 // Conf file named update.json
@@ -150,7 +150,6 @@ func main() {
 		for i := 0; i < len(urls); i++ {
 			res := Surge2SS(urls[i]) //将节点信息解析
 			if res.Remarks != "" {
-				yaml.Encoder
 				//若无过滤,直接加入全部信息
 				/*if (len(filters) <= 0 || filters == nil) && (len(filterouts) <= 0 || filterouts == nil) {
 					servers = append(servers, res)
