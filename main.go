@@ -10,7 +10,7 @@ import (
 	"strings"
 	"sync"
 
-	_ "gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 )
 
 // Conf file named update.json
@@ -25,7 +25,6 @@ type Server struct {
 	Method     string `json:"method"`
 	Password   string `json:"password"`
 	Plugin     string `json:"plugin"`
-	PluginArgs string `json:"plugin_args"`
 	PluginOpts string `json:"plugin_opts"`
 	Remarks    string `json:"remarks"`
 	Server     string `json:"server"`
@@ -33,17 +32,29 @@ type Server struct {
 	Timeout    int    `json:"timeout"`
 }
 
-// YAML type
-/*type Clash struct{
-	Port int `yaml:"port"`
-	Socks_prot int `yaml:"socks-port"`
-	Redir_port int `yaml:"redir-port"`
-	Allow_lan bool `yaml:"allow-lan"`
+// Config file named config.yml
+type Config struct{
+	/*Port int `yaml:"port"`
+	SocksProt int `yaml:"socks-port"`
+	RedirPort int `yaml:"redir-port"`
+	AllowLan bool `yaml:"allow-lan"`
 	LogLevel string `yaml:"log-level"`
 	Exctr string `yaml:"external-controller"`
-	Secret string `yaml:"secret"`
-	Proxy
-}*/
+	Secret string `yaml:"secret"`*/
+	Proxy []Cproxy
+}
+
+//Cproxy clash proxy type
+type Cproxy struct {
+	Type     string `yaml:"type"`
+	Server   string `yaml:"server"`
+	Port     int
+	Password string
+	Cipher   string
+	Name     string
+	Obfs     string
+	ObfsHost string `yaml:"obfs-host"`
+}
 
 // SSGui GUI json
 type SSGui struct {
@@ -134,6 +145,7 @@ func main() {
 	}
 	wg.Wait() //等待下载完成
 	var servers []Server
+	var clash []Cproxy
 	for k := 0; k < len(remotes); k++ {
 		urls := SurgeFromConf(remotes[k])
 		for i := 0; i < len(urls); i++ {
@@ -151,10 +163,10 @@ func main() {
 			res := Surge2SS(urls[i]) //将节点信息解析
 			if res.Remarks != "" {
 				//若无过滤,直接加入全部信息
-				/*if (len(filters) <= 0 || filters == nil) && (len(filterouts) <= 0 || filterouts == nil) {
+				if (len(filters) <= 0 || filters == nil) && (len(filterouts) <= 0 || filterouts == nil) {
 					servers = append(servers, res)
 					continue
-				}*/
+				}
 				for out := 0; out < len(filterouts); out++ {
 					if on, _ := regexp.MatchString(filterouts[out], res.Remarks); on {
 						goto FILTEROUTIT
@@ -169,12 +181,38 @@ func main() {
 			FILTEROUTIT:
 			}
 		}
+		for i := 0; i < len(urls); i++ {
+			cres := Surge2Clash(urls[i])
+			if cres.Name != "" {
+				//若无过滤,直接加入全部信息
+				if (len(filters) <= 0 || filters == nil) && (len(filterouts) <= 0 || filterouts == nil) {
+					clash = append(clash, cres)
+					continue
+				}
+				for out := 0; out < len(filterouts); out++ {
+					if on, _ := regexp.MatchString(filterouts[out], cres.Name); on {
+						goto CFILTEROUTIT
+					}
+				}
+				for j := 0; j < len(filters); j++ {
+					if m, _ := regexp.MatchString(filters[j], cres.Name); m {
+						clash = append(clash, cres)
+						break
+					}
+				}
+			CFILTEROUTIT:
+			}
+		}
 	}
+	
 	fmt.Println(fmt.Sprintf("\n----------------\n成功获取：\n - %s\n格式错误：\n - %s\n网络错误：\n - %s\n----------------\n", strings.Join(result.Success, "\n - "), strings.Join(result.Fromat, "\n - "), strings.Join(result.Network, "\n - ")))
 	gui.Configs = servers
 	outputJSON, _ := json.Marshal(gui)
 	writeFileErr := ioutil.WriteFile("gui-config.json", outputJSON, 0644)
-	if writeFileErr == nil {
+	outputYaml,_ := yaml.Marshal(clash)
+	clasherr := ioutil.WriteFile("clash.yml", outputYaml, 0644)
+	CheckErr(clasherr)
+	if writeFileErr == nil&&clasherr==nil {
 		fmt.Println(fmt.Sprintf("服务器更新完毕，合计更新%d个节点", len(servers)))
 		fmt.Println("请重启Shadowsocks客户端或进入节点列表点击确定")
 	} else {
@@ -242,4 +280,38 @@ func Surge2SS(surge string) Server {
 		}
 	}
 	return res
+}
+
+//Surge2Clash Convert Surge style url to Clash format
+func Surge2Clash(surge string) Cproxy {
+	regex, _ := regexp.Compile("(.*?)\\s*=\\s*custom,(.*?),(.*?),(.*?),(.*?),") //找到所有节点信息,滤出DIRECT和格式不规范的信息
+	obfsRegex, _ := regexp.Compile("obfs-host\\s*=\\s*(.*?)(?:,|$)")
+	obfsTypeRegex, _ := regexp.Compile("obfs\\s*=\\s*(.*?)(?:,|$)")
+	var res Cproxy
+	params := regex.FindSubmatch([]byte(surge))
+	if len(params) == 6 {
+		res.Server = strings.TrimSpace(string(params[2]))
+		res.Port, _ = strconv.Atoi(strings.TrimSpace(string(params[3])))
+		res.Password = strings.TrimSpace(string(params[5]))
+		res.Cipher = strings.TrimSpace(string(params[4]))
+		res.Name = strings.TrimSpace(string(params[1]))
+		res.Type = "ss"
+		obfsType := obfsTypeRegex.FindSubmatch([]byte(surge))
+		if len(obfsType) == 2 {
+			res.Obfs = "http"
+			obfsParams := obfsRegex.FindSubmatch([]byte(surge))
+			if len(obfsParams) == 2 {
+				res.ObfsHost = strings.TrimSpace(string(obfsParams[1]))
+			}
+		}
+	}
+	return res
+}
+
+//CheckErr Print error information
+func CheckErr(err error) {
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	return
 }
