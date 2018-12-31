@@ -29,8 +29,8 @@ type Config struct {
 	LogLevel  string   `yaml:"log-level"`
 	Exctr     string   `yaml:"external-controller"`
 	Secret    string   `yaml:"secret"`*/
-	Proxy      []Cproxy `yaml:"Proxy"`
-	ProxyGroup Group    `yaml:"Proxy Group"`
+	Proxy      []Proxy `yaml:"Proxy"`
+	ProxyGroup Group   `yaml:"Proxy Group"`
 }
 
 //Group Clash Proxy Group
@@ -42,8 +42,8 @@ type Group struct {
 	Interval int
 }
 
-//Cproxy clash proxy type
-type Cproxy struct {
+//Proxy clash proxy type
+type Proxy struct {
 	Type     string `yaml:"type"`
 	Server   string `yaml:"server"`
 	Port     int
@@ -99,7 +99,7 @@ func main() {
 		}(providers[i])
 	}
 	wg.Wait() //等待下载完成
-	var clash []Cproxy
+	var clash []Proxy
 	for k := 0; k < len(remotes); k++ {
 		urls := SurgeFromConf(remotes[k])
 		for i := 0; i < len(urls); i++ {
@@ -112,29 +112,29 @@ func main() {
 		}
 		//成功从配置读取节点信息,将该网址加入成功获取列表
 		result.Success = append(result.Success, providers[k])
-		//将全部节点信息转换为Cproxy格式结构体
+		//将全部节点信息转换为Proxy格式结构体
 		for i := 0; i < len(urls); i++ {
-			cres := Surge2Clash(urls[i])
-			if cres.Name != "" {
+			res := Surge2Clash(urls[i])
+			if res.Name != "" {
 				//若无过滤,直接加入全部信息
 				if (len(filters) <= 0 || filters == nil) && (len(filterouts) <= 0 || filterouts == nil) {
-					clash = append(clash, cres)
-					group.Proxies = append(group.Proxies, cres.Name)
+					clash = append(clash, res)
+					group.Proxies = append(group.Proxies, res.Name)
 					continue
 				}
 				for out := 0; out < len(filterouts); out++ {
-					if on, _ := regexp.MatchString(filterouts[out], cres.Name); on {
-						goto CFILTEROUTIT
+					if on, _ := regexp.MatchString(filterouts[out], res.Name); on {
+						goto FILTEROUTIT
 					}
 				}
 				for j := 0; j < len(filters); j++ {
-					if m, _ := regexp.MatchString(filters[j], cres.Name); m {
-						clash = append(clash, cres)
-						group.Proxies = append(group.Proxies, cres.Name)
+					if m, _ := regexp.MatchString(filters[j], res.Name); m {
+						clash = append(clash, res)
+						group.Proxies = append(group.Proxies, res.Name)
 						break
 					}
 				}
-			CFILTEROUTIT:
+			FILTEROUTIT:
 			}
 		}
 	}
@@ -181,11 +181,11 @@ func SurgeFromConf(conf string) []string {
 }
 
 //Surge2Clash Convert Surge style url to Clash format
-func Surge2Clash(surge string) Cproxy {
+func Surge2Clash(surge string) Proxy {
 	regex, _ := regexp.Compile("(.*?)\\s*=\\s*custom,(.*?),(.*?),(.*?),(.*?),") //找到所有节点信息,滤出DIRECT和格式不规范的信息
 	obfsRegex, _ := regexp.Compile("obfs-host\\s*=\\s*(.*?)(?:,|$)")
 	obfsTypeRegex, _ := regexp.Compile("obfs\\s*=\\s*(.*?)(?:,|$)")
-	var res Cproxy
+	var res Proxy
 	params := regex.FindSubmatch([]byte(surge))
 	if len(params) == 6 {
 		res.Server = strings.TrimSpace(string(params[2]))
