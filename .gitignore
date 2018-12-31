@@ -1,4 +1,3 @@
 *.exe
 *.json
-clash.yml
-debug
+*.yml
