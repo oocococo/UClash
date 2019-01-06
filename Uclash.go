@@ -102,9 +102,12 @@ func main() {
 	var clash []Proxy
 	for k := 0; k < len(remotes); k++ {
 		urls := SurgeFromConf(remotes[k])
-		for i := 0; i < len(urls); i++ {
+
+		//打印托管文件中的节点信息
+		/*for i := 0; i < len(urls); i++ {
 			fmt.Println(urls[i])
-		}
+		}*/
+
 		//未从配置读取到节点信息,将该网址加入格式错误列表
 		if urls == nil {
 			result.Fromat = append(result.Fromat, providers[k])
@@ -117,15 +120,19 @@ func main() {
 			res := Surge2Clash(urls[i])
 			if res.Name != "" {
 				//若无过滤,直接加入全部信息
-				if (len(filters) <= 0 || filters == nil) && (len(filterouts) <= 0 || filterouts == nil) {
-					clash = append(clash, res)
-					group.Proxies = append(group.Proxies, res.Name)
-					continue
+				if len(filterouts) <= 0 {
+					goto BEGIN2FILTER
 				}
 				for out := 0; out < len(filterouts); out++ {
 					if on, _ := regexp.MatchString(filterouts[out], res.Name); on {
-						goto FILTEROUTIT
+						goto FILTEROUT
 					}
+				}
+			BEGIN2FILTER:
+				if len(filters) <= 0 {
+					clash = append(clash, res)
+					group.Proxies = append(group.Proxies, res.Name)
+					continue
 				}
 				for j := 0; j < len(filters); j++ {
 					if m, _ := regexp.MatchString(filters[j], res.Name); m {
@@ -134,13 +141,13 @@ func main() {
 						break
 					}
 				}
-			FILTEROUTIT:
+			FILTEROUT:
 			}
 		}
 	}
 	fmt.Println(fmt.Sprintf("\n----------------\n成功获取：\n - %s\n格式错误：\n - %s\n网络错误：\n - %s\n----------------\n", strings.Join(result.Success, "\n - "), strings.Join(result.Fromat, "\n - "), strings.Join(result.Network, "\n - ")))
 	Cconf.Proxy = clash
-	group.Name = "auto"
+	group.Name = "PROXY"
 	group.Interval = 300
 	group.Type = "url-test"
 	group.URL = "https://www.gstatic.com/generate_204"
