@@ -3,14 +3,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	yaml "gopkg.in/yaml.v2"
 	"io/ioutil"
 	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
 	"sync"
-
-	yaml "gopkg.in/yaml.v2"
 )
 
 // Conf file named update.json
@@ -22,15 +21,15 @@ type Conf struct {
 
 // Config file named config.yml
 type Config struct {
-	/*Port      int      `yaml:"port"`
-	SocksProt int      `yaml:"socks-port"`
-	RedirPort int      `yaml:"redir-port"`
-	AllowLan  bool     `yaml:"allow-lan"`
-	LogLevel  string   `yaml:"log-level"`
-	Exctr     string   `yaml:"external-controller"`
-	Secret    string   `yaml:"secret"`*/
+	Port       int     `yaml:"port"`
+	SocksProt  int     `yaml:"socks-port"`
+	RedirPort  int     `yaml:"redir-port"`
+	AllowLan   bool    `yaml:"allow-lan"`
+	LogLevel   string  `yaml:"log-level"`
+	External   string  `yaml:"external-controller"`
+	Secret     string  `yaml:"secret"`
 	Proxy      []Proxy `yaml:"Proxy"`
-	ProxyGroup Group   `yaml:"Proxy Group"`
+	ProxyGroup []Group `yaml:"Proxy Group"`
 }
 
 //Group Clash Proxy Group
@@ -150,8 +149,8 @@ func main() {
 	group.Name = "PROXY"
 	group.Interval = 300
 	group.Type = "url-test"
-	group.URL = "https://www.gstatic.com/generate_204"
-	Cconf.ProxyGroup = group
+	group.URL = "http://www.gstatic.com/generate_204"
+	Cconf.ProxyGroup = append(Cconf.ProxyGroup, group)
 	outputYaml, _ := yaml.Marshal(Cconf)
 	clasherr := ioutil.WriteFile("config.yml", outputYaml, 0644)
 	CheckErr(clasherr)
