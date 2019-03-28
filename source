@@ -1,0 +1,20 @@
+providers:
+  - https://
+  - https://
+grouplist:
+  - name: Proxy
+    type: url-test
+    url: http://www.gstatic.com/generate_204
+    interval: 300
+    demand: "香港,台湾"
+    abandon: "美国"
+  - name: Netflix
+    type: select
+    demand: "台湾"
+    #abandon: "新加坡"
+  - name: Spotify
+    type: url-test
+    url: http://www.gstatic.com/generate_204
+    interval: 300
+    demand: "美国"
+    #abandon: "新加坡"
