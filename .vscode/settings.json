@@ -1,0 +1,4 @@
+{
+    "go.lintTool": "golangci-lint",
+    "editor.fontFamily": "'Monaco','Droid Sans Mono', 'monospace', monospace, 'Droid Sans Fallback'"
+}
