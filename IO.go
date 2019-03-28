@@ -26,16 +26,16 @@ type Config struct {
 	External  string `yaml:"external-controller"`
 	Secret    string `yaml:"secret"`
 	DNS       struct {
-		Enable       bool
+		Enable       bool `yaml:"enable"`
 		Ipv6         bool
 		Listen       string
 		Enhancedmode string `yaml:"enhanced-mode"`
 		Nameserver   []string
 		Fallback     []string
 	}
-	Proxy      []Proxy `yaml:"Proxy"`
-	ProxyGroup []Group `yaml:"Proxy Group"`
-	Rule       []string
+	Proxy      []Proxy  `yaml:"Proxy"`
+	ProxyGroup []Group  `yaml:"Proxy Group"`
+	Rule       []string `yaml:"Rule"`
 }
 
 //Group Clash Proxy Group

@@ -15,11 +15,12 @@ import (
 func ReadSource() Source {
 	raw, err := ioutil.ReadFile("source.yml")
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("读取source文件错误", err)
 	}
 	var source Source
-	err = yaml.Unmarshal(raw, source)
+	err = yaml.Unmarshal(raw, &source)
 	Checkerr(err)
+	defer fmt.Println("Read sourcefile successfully")
 	return source
 }
 
@@ -37,6 +38,7 @@ func GetSurgeConf(provider string) string {
 	}
 	body, err := ioutil.ReadAll(respon.Body)
 	Checkerr(err)
+	defer fmt.Println("get surgeconfig successfully")
 	return string(body)
 }
 
@@ -46,6 +48,7 @@ func GetSurgeProxies(conf string) []string {
 	if err == nil {
 		submatch := re.FindSubmatch([]byte(conf))
 		if len(submatch) == 2 {
+			defer fmt.Println("get porxies from surge successfully")
 			return strings.Split(string(submatch[1]), "\n")
 		}
 		return nil
