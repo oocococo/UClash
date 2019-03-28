@@ -14,6 +14,7 @@ func main() {
 	var config Config
 	var wg sync.WaitGroup
 	var emp []Group
+	var empproxy []Proxy
 
 	rawconfig, err := ioutil.ReadFile("config.yml")
 	if err != nil {
@@ -24,6 +25,7 @@ func main() {
 		fmt.Println("配置格式错误", err)
 	}
 	config.ProxyGroup = emp
+	config.Proxy = empproxy
 	var proxiesname []string
 	//read surge sub and transform into proxy
 	source := ReadSource()
@@ -35,8 +37,11 @@ func main() {
 				defer wg.Done()
 				if rawconfig != nil {
 					newproxy := FormatProxy(rawproxy)
-					config.Proxy = append(config.Proxy, newproxy)
-					proxiesname = append(proxiesname, newproxy.Name)
+					if newproxy.Name != "" {
+						config.Proxy = append(config.Proxy, newproxy)
+						proxiesname = append(proxiesname, newproxy.Name)
+					}
+
 				}
 				//fmt.Println("成功识别第", i, "个节点")
 			}(surgeproxies[i])
@@ -74,11 +79,12 @@ func main() {
 			fmt.Println("成功得到白名单节点")
 			//fmt.Print(afterdemand)
 			for p := 0; p < len(afterdemand); p++ {
-				if trash == nil {
+				if trash[0] == "" {
 					autogroup.Proxies = afterdemand
 					break
 				} else {
 					for a := 0; a < len(trash); a++ {
+						//fmt.Println(trash[a], "!!!")
 						if neednt, _ := regexp.MatchString(trash[a], afterdemand[p]); !neednt {
 							autogroup.Proxies = append(autogroup.Proxies, afterdemand[p])
 						}
