@@ -67,6 +67,7 @@ func main() {
 		for p := 0; p < len(proxiesname); p++ {
 			if needs == nil {
 				afterdemand = proxiesname
+				white = len(proxiesname)
 				break
 			} else {
 				for n := 0; n < len(needs); n++ {

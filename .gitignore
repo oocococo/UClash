@@ -1,4 +1,6 @@
 *.exe
-*.swp
+*.go.swp
 *.yml
 _*
+.vscode
+.idea
