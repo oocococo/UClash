@@ -9,7 +9,7 @@ env:
     - NAME=UClash
     - BINDIR=bin
 script:
-  - go test ./...
+  - go build
 before_deploy: make -j releases
 deploy:
   provider: releases
