@@ -18,7 +18,7 @@ deploy:
   skip_cleanup: true
   api_key:
     secure: 26a68a123297018cd6e814fe8608d2091c990d33
-  file: UClash
+  file: bin/*
   file_glob: true
   on:
     repo: oocococo/UClash
