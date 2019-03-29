@@ -20,7 +20,7 @@ func ReadSource() Source {
 	var source Source
 	err = yaml.Unmarshal(raw, &source)
 	Checkerr(err)
-	defer fmt.Println("Read sourcefile successfully")
+	defer fmt.Println("Read Source.yml OK!")
 	return source
 }
 
@@ -31,26 +31,27 @@ func GetSurgeConf(provider string) string {
 	request.Header.Add("User-Agent", "Surge/1166 CFNetwork/955.1.2 Darwin/18.0.0")
 	Checkerr(err)
 	respon, err := client.Do(request)
-	defer respon.Body.Close()
 	if err != nil {
 		fmt.Println("获取托管失败", err)
 		result.Network = append(result.Network, provider)
 	}
+	defer respon.Body.Close()
 	body, err := ioutil.ReadAll(respon.Body)
 	Checkerr(err)
-	defer fmt.Println("get surgeconfig successfully")
+	defer fmt.Println("Get SurgeConfig OK!")
 	return string(body)
 }
 
 // GetSurgeProxies from SurgeConf
-func GetSurgeProxies(conf string) []string {
+func GetSurgeProxies(conf string, provider string) []string {
 	re, err := regexp.Compile("\\[Proxy\\]([\\s\\S]*?)\\[Proxy Group\\]")
 	if err == nil {
 		submatch := re.FindSubmatch([]byte(conf))
 		if len(submatch) == 2 {
-			defer fmt.Println("get porxies from surge successfully")
+			defer fmt.Println("Get Proxies OK!")
 			return strings.Split(string(submatch[1]), "\n")
 		}
+		result.Fromat = append(result.Fromat, provider)
 		return nil
 	}
 	return nil

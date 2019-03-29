@@ -61,7 +61,7 @@ type Proxy struct {
 
 // Reslist of convertion
 type Reslist struct {
-	Success []string
+	Sucess  []string
 	Fromat  []string
 	Network []string
 }
