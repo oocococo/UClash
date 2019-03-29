@@ -90,6 +90,7 @@ func main() {
 					if neednt, _ := regexp.MatchString(trash[a], afterdemand[p]); !neednt {
 						autogroup.Proxies = append(autogroup.Proxies, afterdemand[p])
 						black += 1
+						break
 					}
 				}
 			}
