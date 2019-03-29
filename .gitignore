@@ -1,5 +1,9 @@
 *.exe
-*.go.swp
-_*
-.vscode
-.idea
+Country.mmdb
+source.yml
+config.yml
+clash
+**.swp
+/.vscode/*
+UClash
+Stpes.md

@@ -12,6 +12,7 @@ import (
 
 func main() {
 	var config Config
+	config.DNS.Enhancedmode = "redir-host"
 	var wg sync.WaitGroup
 	var proxiesnumber int
 	rawconfig, err := ioutil.ReadFile("config.yml")
