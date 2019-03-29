@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"regexp"
 	"strings"
-	"sync"
 
 	"gopkg.in/yaml.v2"
 )
@@ -13,7 +12,7 @@ import (
 func main() {
 	var config Config
 	config.DNS.Enhancedmode = "redir-host"
-	var wg sync.WaitGroup
+	//var wg sync.WaitGroup
 	var proxiesnumber int
 	rawconfig, err := ioutil.ReadFile("config.yml")
 	if err != nil {
@@ -30,21 +29,14 @@ func main() {
 	source := ReadSource()
 	for i := 0; i < len(source.Providers); i++ {
 		surgeproxies := GetSurgeProxies(GetSurgeConf(source.Providers[i]), source.Providers[i])
-		wg.Add(len(surgeproxies))
 		for s := 0; s < len(surgeproxies); s++ {
-			go func(rawproxy string) {
-				defer wg.Done()
-				newproxy := FormatProxy(rawproxy)
-				if newproxy.Name != "" {
-					config.Proxy = append(config.Proxy, newproxy)
-					proxiesname = append(proxiesname, newproxy.Name)
-					proxiesnumber += 1
-				}
-
-				//fmt.Println("成功识别第", i, "个节点")
-			}(surgeproxies[s])
+			newproxy := FormatProxy(surgeproxies[s])
+			if newproxy.Name != "" {
+				config.Proxy = append(config.Proxy, newproxy)
+				proxiesname = append(proxiesname, newproxy.Name)
+				proxiesnumber += 1
+			}
 		}
-		wg.Wait()
 
 	}
 	fmt.Println("网络错误:", result.Network)
