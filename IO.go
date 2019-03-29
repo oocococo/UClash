@@ -18,10 +18,11 @@ type GroupList struct {
 
 //Config Clash config format
 type Config struct {
-	Port      int    `yaml:"port"`
-	SocksProt int    `yaml:"socks-port"`
-	RedirPort int    `yaml:"redir-port"`
-	AllowLan  bool   `yaml:"allow-lan"`
+	Port      int  `yaml:"port"`
+	SocksProt int  `yaml:"socks-port"`
+	RedirPort int  `yaml:"redir-port"`
+	AllowLan  bool `yaml:"allow-lan"`
+	Mode      string
 	LogLevel  string `yaml:"log-level"`
 	External  string `yaml:"external-controller"`
 	Secret    string `yaml:"secret"`
