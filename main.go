@@ -65,7 +65,7 @@ func main() {
 		trash := strings.Split(source.Grouplist[g].Abandon, ",")
 		fmt.Print("不允许关键词", trash, ",")
 		for p := 0; p < len(proxiesname); p++ {
-			if needs == nil {
+			if needs[0] == "" {
 				afterdemand = proxiesname
 				white = len(proxiesname)
 				break
@@ -74,6 +74,7 @@ func main() {
 					if need, _ := regexp.MatchString(needs[n], proxiesname[p]); need {
 						afterdemand = append(afterdemand, proxiesname[p])
 						white += 1
+						break
 					}
 				}
 			}
@@ -85,13 +86,19 @@ func main() {
 				black = white
 				break
 			} else {
+				flag := 0
 				for a := 0; a < len(trash); a++ {
 					//fmt.Println(trash[a], "!!!")
-					if neednt, _ := regexp.MatchString(trash[a], afterdemand[p]); !neednt {
-						autogroup.Proxies = append(autogroup.Proxies, afterdemand[p])
-						black += 1
+					if neednt, _ := regexp.MatchString(trash[a], afterdemand[p]); neednt {
+
+						flag = 1
+
 						break
 					}
+				}
+				if flag == 0 {
+					autogroup.Proxies = append(autogroup.Proxies, afterdemand[p])
+					black += 1
 				}
 			}
 		}
