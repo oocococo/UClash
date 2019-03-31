@@ -1,6 +1,6 @@
 ###### 本程序可以从surge订阅链接中获取节点,并按照source.yml文件的配置将节点和节点组写入config.yml文件中,同时保留原有的general,dns,rule部分
 
-__source.yml配置说明 __
+*source.yml配置说明*
 ```yml
 providers: 
   - link1
