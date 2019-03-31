@@ -6,7 +6,7 @@ providers:
   - link1
   - link2
 grouplist:
-  - name: lb
+  - name: Proxy
     type: load-balance
     demand: "专线,香港,台湾"
     abandon: "游戏"
@@ -17,8 +17,9 @@ grouplist:
     demand: "netflix"
     url: http://www.gstatic.com/generate_204
     interval: 300
-  - Proxy
+  - name: Spotify
     type: select
+    demand: "美国"
 ```
 
 ##### before
