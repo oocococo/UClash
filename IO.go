@@ -18,15 +18,18 @@ type GroupList struct {
 
 //Config Clash config format
 type Config struct {
-	Port      int  `yaml:"port"`
-	SocksProt int  `yaml:"socks-port"`
-	RedirPort int  `yaml:"redir-port"`
-	AllowLan  bool `yaml:"allow-lan"`
-	Mode      string
-	LogLevel  string `yaml:"log-level"`
-	External  string `yaml:"external-controller"`
-	Secret    string `yaml:"secret"`
-	DNS       struct {
+	Port         int  `yaml:"port"`
+	SocksProt    int  `yaml:"socks-port"`
+	RedirPort    int  `yaml:"redir-port"`
+	AllowLan     bool `yaml:"allow-lan"`
+	Mode         string
+	LogLevel     string `yaml:"log-level"`
+	External     string `yaml:"external-controller"`
+	Secret       string `yaml:"secret"`
+	Experimental struct {
+		IgnoreResolveFail bool `yaml:"ignore-resolve-fail"`
+	}
+	DNS struct {
 		Enable       bool `yaml:"enable"`
 		Ipv6         bool
 		Listen       string
@@ -58,6 +61,7 @@ type Proxy struct {
 	Name     string
 	Obfs     string
 	ObfsHost string `yaml:"obfs-host"`
+	Udp      string
 }
 
 // Reslist of convertion

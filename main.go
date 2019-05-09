@@ -11,7 +11,8 @@ import (
 
 func main() {
 	var config Config
-	config.DNS.Enhancedmode = "redir-host"
+	config.DNS.Enhancedmode = "fake-ip"
+	config.Experimental.IgnoreResolveFail = true
 	//var wg sync.WaitGroup
 	var proxiesnumber int
 	rawconfig, err := ioutil.ReadFile("config.yml")
@@ -32,6 +33,7 @@ func main() {
 		for s := 0; s < len(surgeproxies); s++ {
 			newproxy := FormatProxy(surgeproxies[s])
 			if newproxy.Name != "" {
+				newproxy.Udp = "true"
 				config.Proxy = append(config.Proxy, newproxy)
 				proxiesname = append(proxiesname, newproxy.Name)
 				proxiesnumber += 1
