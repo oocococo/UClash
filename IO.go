@@ -61,7 +61,7 @@ type Proxy struct {
 	Name     string
 	Obfs     string
 	ObfsHost string `yaml:"obfs-host"`
-	Udp      string
+	Udp      bool
 }
 
 // Reslist of convertion
